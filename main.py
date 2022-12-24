@@ -175,7 +175,11 @@ def selectDir():
 if __name__ == '__main__':
     register_heif_opener()
     #######
-    files_path = selectDir()
+    inbox = 'inbox'
+    if os.path.exists(inbox):
+        files_path = inbox
+    else:
+        files_path = selectDir()
     if not files_path:
         print('No Folder Selected', 'Please select a valid Folder')
     else :
