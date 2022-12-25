@@ -2,6 +2,7 @@ from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw 
 from PIL.ExifTags import TAGS
+from exiftool import ExifToolHelper
 from pillow_heif import register_heif_opener
 from geopy.extra.rate_limiter import RateLimiter
 from hachoir.metadata import extractMetadata
@@ -16,6 +17,7 @@ import datetime
 import os
 
 #implicit depdency to ffmpeg, conda package
+#implicit depdency to exiftool, command-line tool
 
 
 def save2csv(filename, MediaCreateDate, MediaModifyDate, location):
@@ -103,6 +105,21 @@ def dms2dd(DMS_coord, sign):
         dd *= -1
     return dd;
 
+def decdeg2dms(dd):
+   is_positive = dd >= 0
+   dd = abs(dd)
+   minutes,seconds = divmod(dd*3600,60)
+   degrees,minutes = divmod(minutes,60)
+   degrees = degrees if is_positive else -degrees
+   return (degrees,minutes,seconds)
+
+
+def format_datetime(datetime):
+    DateCreated = datetime.split(" ")
+    DateCreated[0] = DateCreated[0].replace(":", "-")
+    dashed_datetime = f"{DateCreated[0]} {DateCreated[1]}"
+    return dashed_datetime
+
 
 def get_addressInfo(lat, long):
     try :
@@ -123,23 +140,36 @@ def get_exif(media_file, FILE_FORMAT = ""):
     exifdata = {'GPSLatitudeRef': "", 'GPSLatitude': "", 'GPSLongitudeRef': "", 'GPSLongitude': "", 'DateCreated': "", 'ModifyDate': ""}
     #######################################
     if (FILE_FORMAT == "VIDEO_FORMAT"):
-        parser = createParser(media_file)
-        if parser:
-            metadata = extractMetadata(parser)
-            if metadata:
-                for data in sorted(metadata):
-                    if not data.values:
-                        continue
-                    key = data.description
-                    value = ', '.join([item.text for item in data.values])
-                    if key == "Creation date":
-                        exifdata['DateCreated'] = value
-                    elif key == "Last modification":
-                        exifdata['ModifyDate'] = value 
+        print('a video!')
+        # path_to_file = os.path.join(files_path,file)
+        # print("file and path: ",media_file)
+        with ExifToolHelper() as et:
+            # for d in et.get_metadata("inbox/IMG_9571.MOV"):
+            # these may not be the right create/modify dates for all media formats
+            for d in et.get_tags([media_file], tags=["GPSLatitudeRef", "GPSLatitude", "GPSLongitudeRef", "GPSLongitude","QuickTime:CreateDate","QuickTime:ModifyDate"]):
+                for k, v in d.items():
+                    print(f"Dict: {k} = {v}")
+
+                #inferring N/S and E/W from +/-
+                if d['Composite:GPSLatitude'] > 0:
+                    exifdata['GPSLatitudeRef'] = 'N'
+                else:
+                    exifdata['GPSLatitudeRef'] = 'S'
+                #converting Decimals to DMS
+                exifdata['GPSLatitude'] = decdeg2dms(d['Composite:GPSLatitude'])
+                if d['Composite:GPSLongitude'] > 0:
+                    exifdata['GPSLongitudeRef'] = 'E'
+                else:
+                    exifdata['GPSLongitudeRef'] = 'W'
+                exifdata['GPSLongitude'] = decdeg2dms(d['Composite:GPSLongitude'])
+                # convert timestamp into DateTime object
+                exifdata['DateCreated'] = format_datetime(d['QuickTime:CreateDate'])
+                exifdata['ModifyDate'] = format_datetime(d['QuickTime:ModifyDate'])
+                print(exifdata)
                 return exifdata
-        else:
-            print("No EXIF metadata found")
-            pass 
+            # else:
+            #     print("No EXIF metadata found")
+            #     pass 
     #######################################
     elif (FILE_FORMAT == "IMAGE_FORMAT"):
         image = Image.open(media_file)
@@ -161,6 +191,7 @@ def get_exif(media_file, FILE_FORMAT = ""):
                 exifdata['ModifyDate'] = datetime.datetime.fromtimestamp(m_time)
             except IndexError:
                 pass
+        print (exifdata)
         return exifdata
     #######################################
 
@@ -185,6 +216,7 @@ if __name__ == '__main__':
     else :
         list_of_files= os.listdir(files_path)
         for file in list_of_files:
+
             IMAGE_FORMAT = (".heic", ".HEIC", ".jpg", ".JPG", ".jpeg", ".JPEG", ".png", ".PNG")
             VIDEO_FORMAT = (".mov", ".MOV", ".mp4", ".MP4") #("mov", "qt", "mp4", "m4v", "m4a", "m4p", "m4b")
             latitude = None
@@ -192,9 +224,11 @@ if __name__ == '__main__':
             location = ''
             caption = ''
             
-            if file.upper().endswith(IMAGE_FORMAT) :#or file.upper().endswith(VIDEO_FORMAT):
+            if file.upper().endswith(IMAGE_FORMAT) or file.upper().endswith(VIDEO_FORMAT):
+
                 FILE_FORMAT = "IMAGE_FORMAT" if file.upper().endswith(IMAGE_FORMAT) else "VIDEO_FORMAT"                
                 path = r"{files_path}/{file}".format(files_path = files_path, file = file)
+                print(path)
                 data = get_exif(path, FILE_FORMAT)
                 #########################
                 if data:
