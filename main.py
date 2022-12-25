@@ -17,8 +17,8 @@ import datetime
 import os
 
 #implicit depdency to ffmpeg, conda package
-#implicit depdency to exiftool, command-line tool
-
+#implicit depdency to ImageMagick, conda package, and maybe also Wand, a PyPI install?
+#implicit depdency to exiftool, command-line tool, which requires ExifToolHelper bindings
 
 def save2csv(filename, MediaCreateDate, MediaModifyDate, location):
     if not os.path.isdir('save'):
@@ -182,9 +182,10 @@ def get_exif(media_file, FILE_FORMAT = ""):
                 exifdata['GPSLatitude'] = image.getexif().get_ifd(0x8825)[2]
                 exifdata['GPSLongitudeRef'] = image.getexif().get_ifd(0x8825)[3]
                 exifdata['GPSLongitude'] = image.getexif().get_ifd(0x8825)[4]
-                DateCreated = image.getexif()[306].split(" ")
-                DateCreated[0] = DateCreated[0].replace(":", "-")
-                exifdata['DateCreated'] = f"{DateCreated[0]} {DateCreated[1]}"
+                # DateCreated = image.getexif()[306].split(" ")
+                # DateCreated[0] = DateCreated[0].replace(":", "-")
+                # exifdata['DateCreated'] = f"{DateCreated[0]} {DateCreated[1]}"
+                exifdata['DateCreated'] = format_datetime(image.getexif()[306])
                 # file modification timestamp of a file
                 m_time = os.path.getmtime(path)
                 # convert timestamp into DateTime object
