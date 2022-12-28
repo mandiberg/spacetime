@@ -74,6 +74,7 @@ def add_caption(fileName, FILE_FORMAT = ""):
                 # creating a composite video
                 print("made text")
                 final_clip = CompositeVideoClip([clip, text])
+                final_clip = final_clip.set_duration(clip.duration)
                 print(final_clip)
                 # write the result to a file in any format
                 pathSave = f"save/{mediaName}.MP4"
@@ -82,9 +83,10 @@ def add_caption(fileName, FILE_FORMAT = ""):
                 # won't write either clip, but with the original clip it at least begins the attempt
                 # fails to even try to save the final_clip
                 # need to restart here: https://medium.com/codex/working-with-video-files-in-python-6530c35a6b10
-                final_clip.save_frame("save/testframe.jpeg")
+                # final_clip.save_frame("save/testframe.jpeg")
                 final_clip.write_videofile(pathSave, fps=30)
-            except :
+            except Exception as e :
+                print(e)
                 print("Install ImageMagick on your computer")
             
         elif (FILE_FORMAT == "IMAGE_FORMAT"):
