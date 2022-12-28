@@ -17,8 +17,14 @@ import datetime
 import os
 
 #implicit depdency to ffmpeg, conda package
-#implicit depdency to ImageMagick, conda package, and maybe also Wand, a PyPI install?
-#implicit depdency to exiftool, command-line tool, which requires ExifToolHelper bindings
+#implicit depdency to ImageMagick, brew package, and maybe also Wand, a PyPI install?
+# from wand.image import Image
+# to get Wand to talk to ImageMagick on MacOS you need to tell it where to find it. I used:
+# $ export MAGICK_HOME=/opt/homebrew
+# but wand install instructions say to use:
+# $ export MAGICK_HOME=/opt/local
+#implicit depdency to exiftool, command-line tool
+# exiftool requires ExifToolHelper bindings, a PyPI install
 
 def save2csv(filename, MediaCreateDate, MediaModifyDate, location):
     if not os.path.isdir('save'):
@@ -59,14 +65,24 @@ def add_caption(fileName, FILE_FORMAT = ""):
             os.mkdir('save')
         if (FILE_FORMAT == "VIDEO_FORMAT"):
             try : 
+                print('trying to save video')
                 # loading video dsa gfg intro video
                 clip = VideoFileClip(fileName)
-                text =  TextClip(str(label), font='Arial-Black', fontsize=50, stroke_color='black', stroke_width=2, color='white').\
-                        set_position((100, 200)).set_duration(clip.duration).on_color(color=(0,0,0), col_opacity=0.6)
+                print('loaded video')
+                print(label)
+                text = TextClip(label, font ="Roboto-Bold", fontsize = 70, color ="green")
                 # creating a composite video
+                print("made text")
                 final_clip = CompositeVideoClip([clip, text])
+                print(final_clip)
                 # write the result to a file in any format
                 pathSave = f"save/{mediaName}.MP4"
+                print("pathsave: ",pathSave)
+                # clip.write_videofile(pathSave, codec='mp4', fps=30)
+                # won't write either clip, but with the original clip it at least begins the attempt
+                # fails to even try to save the final_clip
+                # need to restart here: https://medium.com/codex/working-with-video-files-in-python-6530c35a6b10
+                final_clip.save_frame("save/testframe.jpeg")
                 final_clip.write_videofile(pathSave, fps=30)
             except :
                 print("Install ImageMagick on your computer")
@@ -156,12 +172,12 @@ def get_exif(media_file, FILE_FORMAT = ""):
                 else:
                     exifdata['GPSLatitudeRef'] = 'S'
                 #converting Decimals to DMS
-                exifdata['GPSLatitude'] = decdeg2dms(d['Composite:GPSLatitude'])
+                exifdata['GPSLatitude'] = decdeg2dms(abs(d['Composite:GPSLatitude']))
                 if d['Composite:GPSLongitude'] > 0:
                     exifdata['GPSLongitudeRef'] = 'E'
                 else:
                     exifdata['GPSLongitudeRef'] = 'W'
-                exifdata['GPSLongitude'] = decdeg2dms(d['Composite:GPSLongitude'])
+                exifdata['GPSLongitude'] = decdeg2dms(abs(d['Composite:GPSLongitude']))
                 # convert timestamp into DateTime object
                 exifdata['DateCreated'] = format_datetime(d['QuickTime:CreateDate'])
                 exifdata['ModifyDate'] = format_datetime(d['QuickTime:ModifyDate'])
