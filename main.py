@@ -15,6 +15,7 @@ import tkinter as tk
 import pandas as pd
 import datetime
 import os
+import sys
 
 #implicit depdency to ffmpeg, conda package
 #implicit depdency to ImageMagick, brew package, and maybe also Wand, a PyPI install?
@@ -73,8 +74,8 @@ def add_caption(fileName, FILE_FORMAT = ""):
                 text = TextClip(label, font ="Roboto-Bold", fontsize = 70, color ="green")
                 # creating a composite video
                 print("made text")
-                final_clip = CompositeVideoClip([clip, text])
-                final_clip = final_clip.set_duration(clip.duration)
+                final_clip = CompositeVideoClip([clip, text]).set_duration(clip.duration)
+                # final_clip = final_clip
                 print(final_clip)
                 # write the result to a file in any format
                 pathSave = f"save/{mediaName}.MP4"
@@ -139,11 +140,18 @@ def format_datetime(datetime):
     return dashed_datetime
 
 
-def get_addressInfo(lat, long):
+def get_addressInfo(lat, long, zipcity):
     try :
         geocode = Nominatim(user_agent="application")
         location = geocode.reverse((lat, long), language='en', exactly_one=True)
         address = location.raw['address']
+        # print(address)
+        # city = address.get('postcode') if ('postcode' in address) else ''
+         #refer to the named index:
+        address['city'] = zipcity['city'][int(address['postcode'])]
+        # print(address.get('postcode'))
+        # print(df[df["zip"] == address.get('postcode')] )
+        # print(df.loc[address.get('postcode')]) 
         return address
     except :
         print("Internet Disconnected")
@@ -225,6 +233,8 @@ def selectDir():
 if __name__ == '__main__':
     register_heif_opener()
     #######
+    if sys.argv[1] == 'csvonly':
+        csvonly = True
     inbox = 'inbox'
     if os.path.exists(inbox):
         files_path = inbox
@@ -234,6 +244,10 @@ if __name__ == '__main__':
         print('No Folder Selected', 'Please select a valid Folder')
     else :
         list_of_files= os.listdir(files_path)
+        print(list_of_files)
+        list_of_files.sort()
+        print(list_of_files)
+        zipcity = pd.read_csv('NYCZIPs.csv', index_col='zip').to_dict()
         for file in list_of_files:
 
             IMAGE_FORMAT = (".heic", ".HEIC", ".jpg", ".JPG", ".jpeg", ".JPEG", ".png", ".PNG")
@@ -254,7 +268,8 @@ if __name__ == '__main__':
                     print(file)
                     latitude  = dms2dd(data['GPSLatitude'], data['GPSLatitudeRef']) if data['GPSLatitude'] else ''
                     longitude = dms2dd(data['GPSLongitude'], data['GPSLongitudeRef']) if data['GPSLongitude'] else ''
-                    address = get_addressInfo(latitude, longitude) if(latitude and longitude) else ''
-                    add_caption(path, FILE_FORMAT)
+                    address = get_addressInfo(latitude, longitude, zipcity) if(latitude and longitude) else ''
+                    if not csvonly: 
+                        add_caption(path, FILE_FORMAT)
                     filename = path.split("/")[-1]
                     save2csv(filename, data['DateCreated'], data['ModifyDate'], address)   
