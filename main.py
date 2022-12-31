@@ -69,12 +69,13 @@ def add_caption(fileName, FILE_FORMAT = ""):
                 print('trying to save video')
                 # loading video dsa gfg intro video
                 clip = VideoFileClip(fileName)
-                print('loaded video')
+                print('loaded video ', clip.size)
                 print(label)
                 text = TextClip(label, font ="Roboto-Bold", fontsize = 70, color ="green")
                 # creating a composite video
                 print("made text")
-                final_clip = CompositeVideoClip([clip, text]).set_duration(clip.duration)
+                output_size = clip.size
+                final_clip = CompositeVideoClip([clip, text], size=output_size).set_duration(clip.duration)
                 # final_clip = final_clip
                 print(final_clip)
                 # write the result to a file in any format
@@ -145,7 +146,7 @@ def get_addressInfo(lat, long, zipcity):
         geocode = Nominatim(user_agent="application")
         location = geocode.reverse((lat, long), language='en', exactly_one=True)
         address = location.raw['address']
-        # print(address)
+        print(address)
         # city = address.get('postcode') if ('postcode' in address) else ''
          #refer to the named index:
         address['city'] = zipcity['city'][int(address['postcode'])]
@@ -233,8 +234,10 @@ def selectDir():
 if __name__ == '__main__':
     register_heif_opener()
     #######
-    if sys.argv[1] == 'csvonly':
+    if len(sys.argv)>1 and sys.argv[1] == 'csvonly':
         csvonly = True
+    else:
+        csvonly = False
     inbox = 'inbox'
     if os.path.exists(inbox):
         files_path = inbox
