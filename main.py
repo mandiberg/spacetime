@@ -37,7 +37,10 @@ def save2csv(filename, MediaCreateDate, MediaModifyDate, location):
     state = address.get('state', '')
     zipcode = address.get('postcode')
     url = address.get('url')
-    raw_data = {'filename': [filename], 'MediaCreateDate': [MediaCreateDate], 'MediaModifyDate': [MediaModifyDate], \
+    createdate_and_time = split_datetime(MediaCreateDate)
+    moddate_and_time = split_datetime(MediaModifyDate)
+    # MediaCreate = str(MediaCreateDate).split(" ")
+    raw_data = {'filename': [filename], 'MediaCreateDate': [createdate_and_time[0]], 'MediaCreateTime': [createdate_and_time[1]], 'MediaModifyTime': [moddate_and_time[1]], \
                 'House Number': [house_number], 'Street Name': [street_name], 'City': [city], 'State': [state], 'ZIP code': [zipcode], 'URL':[url]}
     df = pd.DataFrame(raw_data)
     # append data frame to CSV file
@@ -140,6 +143,10 @@ def format_datetime(datetime):
     DateCreated[0] = DateCreated[0].replace(":", "-")
     dashed_datetime = f"{DateCreated[0]} {DateCreated[1]}"
     return dashed_datetime
+
+def split_datetime(datetime):
+    date_and_time = datetime.split(" ")
+    return date_and_time
 
 
 def get_addressInfo(lat, lon, zipcity):
