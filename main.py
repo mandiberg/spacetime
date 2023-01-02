@@ -36,8 +36,9 @@ def save2csv(filename, MediaCreateDate, MediaModifyDate, location):
     city = address.get('city', '')
     state = address.get('state', '')
     zipcode = address.get('postcode')
+    url = address.get('url')
     raw_data = {'filename': [filename], 'MediaCreateDate': [MediaCreateDate], 'MediaModifyDate': [MediaModifyDate], \
-                'House Number': [house_number], 'Street Name': [street_name], 'City': [city], 'State': [state], 'ZIP code': [zipcode]}
+                'House Number': [house_number], 'Street Name': [street_name], 'City': [city], 'State': [state], 'ZIP code': [zipcode], 'URL':[url]}
     df = pd.DataFrame(raw_data)
     # append data frame to CSV file
     if os.path.exists(pathFile):
@@ -141,11 +142,12 @@ def format_datetime(datetime):
     return dashed_datetime
 
 
-def get_addressInfo(lat, long, zipcity):
+def get_addressInfo(lat, lon, zipcity):
     try :
         geocode = Nominatim(user_agent="application")
-        location = geocode.reverse((lat, long), language='en', exactly_one=True)
+        location = geocode.reverse((lat, lon), language='en', exactly_one=True)
         address = location.raw['address']
+        address['url'] = f"https://nominatim.openstreetmap.org/ui/reverse.html?lat={lat}&lon={lon}&zoom=18"
         print(address)
         # city = address.get('postcode') if ('postcode' in address) else ''
          #refer to the named index:
@@ -198,7 +200,7 @@ def get_exif(media_file, FILE_FORMAT = ""):
             #     print("No EXIF metadata found")
             #     pass 
     #######################################
-    elif (FILE_FORMAT == "IMAGE_FORMAT"):
+    elif (FILE_FORMAT == "IMAGE_FORMAT" and csvonly is False):
         image = Image.open(media_file)
         image.verify()
         if not image.getexif():
