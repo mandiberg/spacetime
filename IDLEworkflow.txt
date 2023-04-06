@@ -1,0 +1,7 @@
+Michael's IDLE workflow
+
+Rename videos with renameIDLEvideos.command (disregard the CSV)
+
+Extract Address info from GPS with spacetime ("python main.py")
+
+Manually check the CSV for: intersection of two streets, no house number, no city

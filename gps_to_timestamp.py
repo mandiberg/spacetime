@@ -16,6 +16,9 @@ import pandas as pd
 import datetime
 import os
 import sys
+from datetime import datetime
+from pytz import timezone
+from dateutil import tz
 
 #implicit depdency to ffmpeg, conda package
 #implicit depdency to ImageMagick, brew package, and maybe also Wand, a PyPI install?
@@ -34,6 +37,7 @@ def save2csv(filename, MediaCreateDate, MediaModifyDate, location):
     house_number = address.get('house_number', '')
     street_name = address.get('road', '')
     city = address.get('city', '')
+    print("save to csv city ",city)
     state = address.get('state', '')
     zipcode = address.get('postcode')
     url = address.get('url')
@@ -144,8 +148,9 @@ def format_datetime(datetime):
     dashed_datetime = f"{DateCreated[0]} {DateCreated[1]}"
     return dashed_datetime
 
-def split_datetime(datetime):
-    date_and_time = datetime.split(" ")
+def split_datetime(thisdate_string):
+    datetimeEST = timezoneDate(thisdate_string)
+    date_and_time = (datetimeEST.strftime('%Y-%m-%d'), datetimeEST.strftime('%H:%M:%S'))
     return date_and_time
 
 
@@ -158,19 +163,56 @@ def get_addressInfo(lat, lon, zipcity):
         print(address)
         # city = address.get('postcode') if ('postcode' in address) else ''
          #refer to the named index:
-        address['city'] = zipcity['city'][int(address['postcode'])]
+        try:
+            # print("zipcity ",zipcity, int(address['postcode']))
+            # print("zipcity line ",zipcity[int(address['postcode'])])
+            # print("zipcity city ",zipcity[int(address['postcode'])]['city'])
+            address['city'] = zipcity[int(address['postcode'])]
+            print("correctcity ",address['city'])
+        except:
+            address['city'] = ""
+            print("well that didn't work!")
+        # address['city'] = zipcity['city'][int(address['postcode'])]
         # print(address.get('postcode'))
         # print(df[df["zip"] == address.get('postcode')] )
         # print(df.loc[address.get('postcode')]) 
         return address
     except :
-        print("Internet Disconnected")
-        
+        print("couldnt get get_addressInfo -- Internet Disconnected?")
+
+
+# def convert(y,m,d,h,min,sec,ms):
+#     NYC = tz.gettz('America/ New_York')
+#     d = datetime.datetime(y,m,d,h,min,sec,ms,tzinfo = NYC)
+#     return time.mktime(d.timetuple())
+#     unixtime = time.mktime(d.timetuple())
+
+
+def timezoneDate(thisdate_string):
+    from datetime import datetime
+
+    #THIS NEEDS TO CONVERT FROM UTC TO EST
+    #IT DOESNT AND IT WAS GIVING ME HEADACHE
+    #I GIVE UP FOR NOW
+    
+    # format = "%Y-%m-%d %H:%M:%S %Z%z"
+    format = "%Y-%m-%d %H:%M:%S"
+    # NYC = tz.gettz('America/ New_York')
+    # d = datetime.datetime(y,m,d,h,min,sec,ms,tzinfo = NYC)
+    # print(convert(2020,5,3,3,59,0,0))
+
+    datetimeGMT = datetime.strptime(thisdate_string, format)
+    datetimeEST = datetimeGMT.astimezone(timezone('US/Eastern'))
+    print(type(datetimeGMT)," datetime ",datetimeGMT.strftime(format))
+    print(type(datetimeEST)," datetimeEST ",datetimeEST.strftime(format))
+    return(datetimeEST)
+
 def reformatDate(date_string):
     from datetime import datetime
     datetime = datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S')
     nowDate = datetime.strftime("%a %m, %Y at %I:%M:%S %p")
     return nowDate
+
 
 def get_exif(media_file, FILE_FORMAT = ""):
     exifdata = {'GPSLatitudeRef': "", 'GPSLatitude': "", 'GPSLongitudeRef': "", 'GPSLongitude': "", 'DateCreated': "", 'ModifyDate': ""}
@@ -260,6 +302,7 @@ if __name__ == '__main__':
         list_of_files.sort()
         print(list_of_files)
         zipcity = pd.read_csv('NYCZIPs.csv', index_col='zip').to_dict()
+        zipcity = zipcity['city']
         for file in list_of_files:
 
             IMAGE_FORMAT = (".heic", ".HEIC", ".jpg", ".JPG", ".jpeg", ".JPEG", ".png", ".PNG")
