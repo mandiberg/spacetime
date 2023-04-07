@@ -19,7 +19,7 @@ from datetime import datetime
 from pytz import timezone
 from dateutil import tz
 
-#implicit depdency to exiftool, command-line tool
+# implicit depdency to exiftool, command-line tool
 # exiftool requires ExifToolHelper bindings, a PyPI install
 
 def save2csv(filename, MediaCreateDate, MediaModifyDate, location):
