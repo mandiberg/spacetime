@@ -76,7 +76,7 @@ def split_datetime(thisdate_string):
     return date_and_time
 
 
-def get_addressInfo(lat, lon, zipcity):
+def get_addressInfo(lat, lon):
     print("lat, lon, zipcity: ",lat, lon)
     try :
         print("trying to construct object")
